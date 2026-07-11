@@ -1,21 +1,19 @@
-"use client";
-
 import React, { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../../contexts/AuthContext";
-import { chatService } from "../../services/chat";
-import { papersService } from "../../services/papers";
-import { Conversation, Message, Paper, Citation } from "../../types";
-import Navbar from "../../components/Navbar";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { chatService } from "../services/chat";
+import { papersService } from "../services/papers";
+import { Conversation, Message, Paper, Citation } from "../types";
+import Navbar from "../components/Navbar";
 import { 
   MessageSquare, Plus, Trash2, Send, Sparkles, BookOpen, 
   ChevronRight, AlertCircle, FileText, Bookmark, Quote, Info 
 } from "lucide-react";
-import { API_BASE_URL } from "../../services/api";
+import { API_BASE_URL } from "../services/api";
 
 export default function ChatPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   // Chat State
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -93,7 +91,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push("/login");
+      navigate("/login");
       return;
     }
     if (isAuthenticated) {
@@ -188,7 +186,7 @@ export default function ChatPage() {
     const accessToken = localStorage.getItem("rpa_access_token");
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chat/conversations/${activeChatId}/messages`, {
+      const response = await fetch(`${API_BASE_URL}/chat/conversations/${activeChatId}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -293,7 +291,7 @@ export default function ChatPage() {
                       onClick={() => handleSelectChat(chat.id)}
                       className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer border transition-all text-xs ${
                         isActive
-                          ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-400 font-semibold"
+                           ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-400 font-semibold"
                           : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
                       }`}
                     >

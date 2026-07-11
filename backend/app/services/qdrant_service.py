@@ -31,21 +31,20 @@ class QdrantService:
 
     @classmethod
     def get_client(cls) -> QdrantClient:
-        """Get or initialize the Qdrant client (falls back to in-memory if no credentials are configured)."""
+        """Get or initialize the Qdrant Cloud client."""
         if cls._client is not None:
             return cls._client
 
-        if settings.QDRANT_URL:
-            logger.info(f"Connecting to Qdrant Cloud at {settings.QDRANT_URL}")
-            cls._client = QdrantClient(
-                url=settings.QDRANT_URL,
-                api_key=settings.QDRANT_API_KEY
+        if not settings.QDRANT_URL or not settings.QDRANT_API_KEY:
+            raise ValueError(
+                "QDRANT_URL and QDRANT_API_KEY must be configured in environment settings to run Qdrant Cloud vector search."
             )
-        else:
-            logger.warning("QDRANT_URL not configured. Falling back to local in-memory Qdrant instance.")
-            # In-memory client works offline and requires no setup
-            cls._client = QdrantClient(":memory:")
-            
+
+        logger.info(f"Connecting to Qdrant Cloud at {settings.QDRANT_URL}")
+        cls._client = QdrantClient(
+            url=settings.QDRANT_URL,
+            api_key=settings.QDRANT_API_KEY
+        )
         return cls._client
 
     @classmethod

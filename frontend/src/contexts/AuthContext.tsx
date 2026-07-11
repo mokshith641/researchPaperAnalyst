@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import api, { tokenStorage } from "../services/api";
 import { User } from "../types";
 
@@ -20,7 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const checkAuth = async () => {
     const token = tokenStorage.getAccessToken();
@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const userResponse = await api.get("/auth/me");
       setUser(userResponse.data);
-      router.push("/dashboard");
+      navigate("/dashboard");
     } catch (error: any) {
       tokenStorage.clearTokens();
       setUser(null);
@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     tokenStorage.clearTokens();
     setUser(null);
     api.post("/auth/logout").catch(() => {}); // fire and forget
-    router.push("/login");
+    navigate("/login");
   };
 
   return (

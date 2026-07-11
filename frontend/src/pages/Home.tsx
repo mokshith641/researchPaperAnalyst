@@ -1,9 +1,7 @@
-"use client";
-
 import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { 
   Sparkles, FileText, Search, BookOpen, MessageSquare, 
   ArrowRight, ShieldCheck, Cpu, Database, ChevronRight 
@@ -11,14 +9,14 @@ import {
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   // If already logged in, redirect them to dashboard directly
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push("/dashboard");
+      navigate("/dashboard");
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   if (isLoading) {
     return (
@@ -55,13 +53,13 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4">
             <Link 
-              href="/login" 
+              to="/login" 
               className="text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
             >
               Sign In
             </Link>
             <Link 
-              href="/register" 
+              to="/register" 
               className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-indigo-500/10 active:scale-98"
             >
               Register <ChevronRight className="h-3.5 w-3.5" />
@@ -86,13 +84,13 @@ export default function Home() {
 
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-6">
           <Link 
-            href="/register" 
+            to="/register" 
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-semibold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-indigo-500/25 active:scale-98"
           >
             Get Started For Free <ArrowRight className="h-4 w-4" />
           </Link>
           <Link 
-            href="/login" 
+            to="/login" 
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 text-slate-300 font-semibold text-xs uppercase tracking-wider rounded-xl transition-all shadow-inner active:scale-98"
           >
             Access Dashboard
@@ -165,7 +163,7 @@ export default function Home() {
         
         <div className="flex flex-wrap justify-center items-center gap-4 text-xs font-mono text-slate-400">
           <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900/50 border border-slate-800/80 rounded-lg">
-            <Sparkles className="h-3.5 w-3.5 text-indigo-400" /> Next.js
+            <Sparkles className="h-3.5 w-3.5 text-indigo-400" /> React + Vite
           </div>
           <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900/50 border border-slate-800/80 rounded-lg">
             <Cpu className="h-3.5 w-3.5 text-blue-400" /> FastAPI
@@ -192,7 +190,7 @@ export default function Home() {
         </p>
         <div>
           <Link 
-            href="/register" 
+            to="/register" 
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-semibold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-500/15 active:scale-98 animate-pulse-subtle"
           >
             Create Free Account <ArrowRight className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import api from "./api";
+import api, { API_BASE_URL } from "./api";
 import { Paper, SearchResult, SummaryResponse } from "../types";
 
 export const papersService = {
@@ -54,12 +54,7 @@ export const papersService = {
   },
 
   downloadPaperUrl: (paperId: string): string => {
-    const token = localStorage.getItem("rpa_access_token");
-    // Since browser download requests don't allow auth headers, we can pass JWT in query parameter
-    // Wait, let's see if we should download via standard api client
-    // Or return direct backend URL that serves PDF. We can construct it:
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    return `${baseUrl}/api/papers/${paperId}/download`;
+    return `${API_BASE_URL}/api/papers/${paperId}/download`;
   },
 
   downloadPaperFile: async (paperId: string, fileName: string): Promise<void> => {

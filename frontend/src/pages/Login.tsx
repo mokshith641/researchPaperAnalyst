@@ -1,9 +1,7 @@
-"use client";
-
 import React, { useState } from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { AlertCircle, Lock, Mail } from "lucide-react";
 
 export default function LoginPage() {
@@ -124,7 +122,7 @@ export default function LoginPage() {
 
         <p className="mt-8 text-center text-xs text-slate-400">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
+          <Link to="/register" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
             Register for free
           </Link>
         </p>

@@ -7,7 +7,7 @@ import {
   FileText, Download, Trash2, MessageSquare, Sparkles, 
   Search, RefreshCw, AlertCircle, FileDigit, HelpCircle, FileCheck, X
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 
 interface PaperLibraryProps {
   papers: Paper[];
@@ -16,7 +16,7 @@ interface PaperLibraryProps {
 }
 
 export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibraryProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   
@@ -65,7 +65,7 @@ export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibr
     if (typeof window !== "undefined") {
       sessionStorage.setItem("rpa_selected_paper_id", paperId);
     }
-    router.push("/chat");
+    navigate("/chat");
   };
 
   const getStatusBadge = (status: string, error?: string | null) => {

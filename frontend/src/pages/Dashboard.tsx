@@ -1,22 +1,20 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../../contexts/AuthContext";
-import { papersService } from "../../services/papers";
-import { chatService } from "../../services/chat";
-import { Paper, SearchResult, Conversation } from "../../types";
-import Navbar from "../../components/Navbar";
-import UploadDialog from "../../components/UploadDialog";
-import PaperLibrary from "../../components/PaperLibrary";
+import { useAuth } from "../contexts/AuthContext";
+import { papersService } from "../services/papers";
+import { chatService } from "../services/chat";
+import { Paper, SearchResult, Conversation } from "../types";
+import Navbar from "../components/Navbar";
+import UploadDialog from "../components/UploadDialog";
+import PaperLibrary from "../components/PaperLibrary";
 import { 
   Upload, FileText, MessageSquare, Search, Sparkles, 
   HelpCircle, ChevronRight, AlertCircle, BookOpen 
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 
 export default function DashboardPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   // Dialog State
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -53,13 +51,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push("/login");
+      navigate("/login");
       return;
     }
     if (isAuthenticated) {
       fetchDashboardData();
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleSemanticSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +80,7 @@ export default function DashboardPage() {
   const startNewChat = async () => {
     try {
       const newChat = await chatService.createConversation();
-      router.push("/chat");
+      navigate("/chat");
     } catch (err) {
       alert("Failed to start new chat");
     }
@@ -92,14 +90,14 @@ export default function DashboardPage() {
     if (typeof window !== "undefined") {
       sessionStorage.setItem("rpa_active_chat_id", chatId);
     }
-    router.push("/chat");
+    navigate("/chat");
   };
 
   const startChatWithPaper = (paperId: string) => {
     if (typeof window !== "undefined") {
       sessionStorage.setItem("rpa_selected_paper_id", paperId);
     }
-    router.push("/chat");
+    navigate("/chat");
   };
 
   if (authLoading || !isAuthenticated) {

@@ -1,9 +1,7 @@
-"use client";
-
 import React, { useState } from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { AlertCircle, Lock, Mail, User } from "lucide-react";
 
 export default function RegisterPage() {
@@ -164,7 +162,7 @@ export default function RegisterPage() {
 
         <p className="mt-8 text-center text-xs text-slate-400">
           Already have an account?{" "}
-          <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
+          <Link to="/login" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
             Sign in
           </Link>
         </p>
