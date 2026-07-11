@@ -1,0 +1,63 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: rpa_db
+    restart: always
+    environment:
+      POSTGRES_USER: rpa_user
+      POSTGRES_PASSWORD: rpa_password
+      POSTGRES_DB: rpa_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rpa_user -d rpa_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rpa_backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://rpa_user:rpa_password@db:5432/rpa_db
+      - JWT_SECRET=super-secret-key-change-in-production
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+      - UPLOAD_DIR=/app/uploads
+      - EMBEDDING_PROVIDER=huggingface # 'openai' or 'huggingface'
+      - HF_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+      - LLM_PROVIDER=groq # 'openai' or 'groq'
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GROQ_MODEL_NAME=llama-3.1-70b-versatile
+      - OPENAI_MODEL_NAME=gpt-4o-mini
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - uploads_data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rpa_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  uploads_data:
