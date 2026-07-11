@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Next.js build & dev files
+.next/
+out/
+build/
+dist/
+
+# Env config templates
+.env
+.env.local
+.env.production
+.env.development
+
+# System files & IDEs
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

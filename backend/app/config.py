@@ -35,10 +35,20 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "groq")
     GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY")
 
+    # ---------------- Qdrant Vector DB ----------------
+    QDRANT_URL: Optional[str] = os.getenv("QDRANT_URL")
+    QDRANT_API_KEY: Optional[str] = os.getenv("QDRANT_API_KEY")
+
+    # ---------------- AWS S3 Storage ----------------
+    AWS_ACCESS_KEY_ID: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY")
+    AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
+    AWS_BUCKET_NAME: Optional[str] = os.getenv("AWS_BUCKET_NAME")
+
     # ---------------- AI Models ----------------
     GROQ_MODEL_NAME: str = os.getenv(
         "GROQ_MODEL_NAME",
-        "llama-3.1-70b-versatile"
+        "llama-3.3-70b-versatile"
     )
     OPENAI_MODEL_NAME: str = os.getenv(
         "OPENAI_MODEL_NAME",

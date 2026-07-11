@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.routers.auth import get_current_user
 from app.schemas.schemas import (
     UserResponse, ConversationResponse, ConversationDetailResponse, MessageResponse
@@ -90,7 +90,7 @@ async def send_message(
     Ensures safe async database connection handling during stream consumption.
     """
     # Verify the conversation exists and belongs to the user first
-    async with AsyncSessionLocal() as init_db_session:
+    async with SessionLocal() as init_db_session:
         conversation_repo = ConversationRepository(init_db_session)
         conversation = await conversation_repo.get_by_id(conversation_id, current_user.id)
         if not conversation:
@@ -107,7 +107,7 @@ async def send_message(
 
     # Define SSE stream wrapper that holds onto its own isolated db connection
     async def sse_stream_generator():
-        async with AsyncSessionLocal() as stream_db_session:
+        async with SessionLocal() as stream_db_session:
             async for chunk in RAGPipeline.chat_stream(
                 db=stream_db_session,
                 user_id=current_user.id,

@@ -5,7 +5,7 @@ import { Paper } from "../types";
 import { papersService } from "../services/papers";
 import { 
   FileText, Download, Trash2, MessageSquare, Sparkles, 
-  Search, RefreshCw, AlertCircle, FileDigit, HelpCircle, FileCheck
+  Search, RefreshCw, AlertCircle, FileDigit, HelpCircle, FileCheck, X
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -219,10 +219,14 @@ export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibr
 
       {/* Summarizer Sidebar/Dialog */}
       {selectedPaperSummary && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl h-full rounded-2xl glass-panel shadow-2xl p-6 flex flex-col justify-between overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/70 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-2xl h-full rounded-2xl glass-panel shadow-2xl p-6 flex flex-col justify-between overflow-hidden relative">
+            {/* Background glowing effects for premium style */}
+            <div className="absolute top-10 right-10 h-[200px] w-[200px] rounded-full bg-indigo-500/10 blur-[80px] pointer-events-none" />
+            <div className="absolute bottom-10 left-10 h-[200px] w-[200px] rounded-full bg-emerald-500/5 blur-[80px] pointer-events-none" />
+            
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800/80 mb-4">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800/80 mb-4 relative z-10">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-indigo-400 shrink-0" />
                 <h3 className="text-base font-bold text-white tracking-tight truncate max-w-[450px]" title={selectedPaperSummary.title}>
@@ -236,9 +240,9 @@ export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibr
                 <X className="h-5 w-5" />
               </button>
             </div>
-
+ 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+            <div className="flex-1 overflow-y-auto space-y-6 pr-2 relative z-10">
               {isLoadingSummary ? (
                 <div className="flex flex-col items-center justify-center h-64 gap-3">
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-800 border-t-indigo-500" />
@@ -262,7 +266,7 @@ export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibr
                       &ldquo;{summaryData.abstract}&rdquo;
                     </p>
                   </div>
-
+ 
                   {/* Summary Section */}
                   <div className="space-y-1.5">
                     <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Key Findings & Contributions</h4>
@@ -270,7 +274,7 @@ export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibr
                       {summaryData.summary}
                     </p>
                   </div>
-
+ 
                   {/* ELI5 / Explanation Section */}
                   <div className="space-y-1.5">
                     <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -280,28 +284,28 @@ export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibr
                       {summaryData.explain_simple}
                     </p>
                   </div>
-
+ 
                   {/* Key points Section */}
                   {summaryData.key_points && summaryData.key_points.length > 0 && (
                     <div className="space-y-2">
                       <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Key Takeaways</h4>
                       <ul className="space-y-2 pl-1">
                         {summaryData.key_points.map((point: string, i: number) => (
-                          <tr key={i} className="flex items-start gap-2.5">
+                          <li key={i} className="flex items-start gap-2.5">
                             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
                             <span>{point}</span>
-                          </tr>
+                          </li>
                         ))}
                       </ul>
                     </div>
                   )}
-
+ 
                 </div>
               ) : null}
             </div>
-
+ 
             {/* Modal Footer */}
-            <div className="pt-4 border-t border-slate-800/80 mt-4 flex justify-end">
+            <div className="pt-4 border-t border-slate-800/80 mt-4 flex justify-end relative z-10">
               <button
                 onClick={() => setSelectedPaperSummary(null)}
                 className="px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-950 text-slate-400 hover:text-slate-200 text-xs font-semibold rounded-xl transition-all"

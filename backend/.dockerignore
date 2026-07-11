@@ -1,0 +1,27 @@
+# Virtual environment
+env/
+.env
+.venv/
+venv/
+
+# Python caching
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Testing & logs
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# IDE & system files
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Temporary uploads directory
+uploads/

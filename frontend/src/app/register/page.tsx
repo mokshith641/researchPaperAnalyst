@@ -39,12 +39,15 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-slate-950 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-950 p-4 overflow-hidden">
       {/* Background decoration */}
-      <div className="absolute top-1/4 left-1/4 h-[300px] w-[300px] rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-blue-500/10 blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/4 h-[400px] w-[400px] rounded-full bg-indigo-500/10 blur-[130px] pointer-events-none animate-pulse-glow" />
+      <div className="absolute bottom-1/4 right-1/4 h-[450px] w-[450px] rounded-full bg-blue-500/10 blur-[150px] pointer-events-none animate-pulse-glow" />
 
-      <div className="w-full max-w-md rounded-2xl glass-panel p-8 shadow-2xl relative z-10">
+      {/* Background SVG Grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-35 pointer-events-none" />
+
+      <div className="w-full max-w-md rounded-2xl glass-panel p-8 shadow-2xl relative z-10 animate-fade-in">
         <div className="flex flex-col items-center gap-2 mb-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white font-black text-xl shadow-lg shadow-indigo-500/30">
             RP

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Backgro
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.routers.auth import get_current_user
 from app.schemas.schemas import (
     UserResponse, PaperResponse, PaperUpdate, SearchQuery, SearchResult, SummaryResponse
@@ -23,7 +23,7 @@ storage_service = LocalStorageService()
 
 async def run_process_pdf_background(paper_id: uuid.UUID, file_path: str, job_id: uuid.UUID):
     """Background task launcher that runs within its own database session."""
-    async with AsyncSessionLocal() as db:
+    async with SessionLocal() as db:
         await process_pdf_background(db, paper_id, file_path, job_id)
 
 

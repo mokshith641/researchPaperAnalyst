@@ -52,8 +52,16 @@ async def process_pdf_background(
             batch_embeddings = await VectorService.get_embeddings(batch_texts)
             embeddings.extend(batch_embeddings)
 
-        # 4. Save chunks with embeddings to PostgreSQL
+        # 4. Save chunks to SQL DB and index in Qdrant
         logger.info(f"Saving chunks for paper {paper_id} to database")
+        
+        dialect_name = db.bind.dialect.name if db.bind else ""
+        is_postgres = "postgresql" in dialect_name
+        
+        # Load paper to get owner metadata
+        paper = await paper_repo.get_by_id(paper_id)
+        user_id = paper.user_id if paper else None
+        
         db_chunks = []
         for idx, chunk in enumerate(chunks_data):
             db_chunk = DocumentChunk(
@@ -61,11 +69,27 @@ async def process_pdf_background(
                 page_number=chunk["page_number"],
                 chunk_index=chunk["chunk_index"],
                 content=chunk["content"],
-                embedding=embeddings[idx]
+                embedding=embeddings[idx] if is_postgres else None
             )
             db_chunks.append(db_chunk)
             
         await paper_repo.create_chunks(db_chunks)
+        
+        # 4b. Index into Qdrant for semantic search fallback and RAG ask endpoints
+        from app.services.qdrant_service import QdrantService
+        qdrant_chunks = []
+        for chunk in db_chunks:
+            qdrant_chunks.append({
+                "id": chunk.id,
+                "content": chunk.content,
+                "metadata": {
+                    "paper_id": str(paper_id),
+                    "page_number": chunk.page_number,
+                    "chunk_index": chunk.chunk_index,
+                    "user_id": str(user_id) if user_id else ""
+                }
+            })
+        QdrantService.upsert_chunks("research_papers", qdrant_chunks)
 
         # 5. Summarize paper using LLM
         # We extract first 2 pages and last page to get abstract, introduction, and conclusion

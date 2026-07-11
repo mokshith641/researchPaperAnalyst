@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 # pyrefly: ignore [missing-import]
 from pgvector.sqlalchemy import Vector
 
-from app.database import Base
+from app.database import Base, DATABASE_URL
 from app.config import settings
 
 class User(Base):
@@ -23,6 +23,7 @@ class User(Base):
     # Relationships
     papers: Mapped[List["Paper"]] = relationship("Paper", back_populates="user", cascade="all, delete-orphan")
     conversations: Mapped[List["Conversation"]] = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
+    uploaded_files: Mapped[List["UploadedFile"]] = relationship("UploadedFile", back_populates="user", cascade="all, delete-orphan")
 
 
 class Paper(Base):
@@ -58,8 +59,13 @@ class DocumentChunk(Base):
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     
-    # pgvector embedding column - size configured dynamically
-    embedding = Column(Vector(settings.vector_dimension), nullable=True)
+    # pgvector embedding column - size configured dynamically if on PostgreSQL
+    if DATABASE_URL and "postgresql" in DATABASE_URL:
+        from pgvector.sqlalchemy import Vector
+        embedding = Column(Vector(settings.vector_dimension), nullable=True)
+    else:
+        embedding = Column(Text, nullable=True)
+        
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
@@ -106,3 +112,17 @@ class ProcessingJob(Base):
 
     # Relationships
     paper: Mapped["Paper"] = relationship("Paper", back_populates="jobs")
+
+
+class UploadedFile(Base):
+    __tablename__ = "uploaded_files"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_url: Mapped[str] = mapped_column(Text, nullable=False)
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="uploaded_files")
+

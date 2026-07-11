@@ -61,12 +61,40 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     return await user_repo.create(user_in)
 
 
+from fastapi import Request
+
 @router.post("/login", response_model=TokenResponse)
-async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
-    """Authenticate credentials and return session tokens."""
+async def login(request: Request, db: AsyncSession = Depends(get_db)):
+    """Authenticate credentials and return session tokens. Supports both JSON and Form-data (Swagger)."""
     user_repo = UserRepository(db)
-    user = await user_repo.get_by_email(credentials.email)
-    if not user or not verify_password(credentials.password, user.hashed_password):
+    
+    content_type = request.headers.get("content-type", "")
+    email = None
+    password = None
+    
+    if "application/x-www-form-urlencoded" in content_type:
+        form_data = await request.form()
+        email = form_data.get("username")
+        password = form_data.get("password")
+    else:
+        try:
+            json_data = await request.json()
+            email = json_data.get("email")
+            password = json_data.get("password")
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid login payload format"
+            )
+            
+    if not email or not password:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Email and password are required"
+        )
+        
+    user = await user_repo.get_by_email(email)
+    if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"

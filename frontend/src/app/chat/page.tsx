@@ -456,15 +456,17 @@ export default function ChatPage() {
 
                   {/* Streaming Block */}
                   {isStreaming && (streamingContent || streamingCitations.length > 0) && (
-                    <div className="flex gap-4 justify-start">
+                    <div className="flex gap-4 justify-start animate-fade-in">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-indigo-600 to-blue-500 text-white font-bold text-xs shrink-0 select-none">
                         AI
                       </div>
                       <div className="space-y-2 max-w-[85%]">
                         {streamingContent && (
                           <div className="p-4 rounded-2xl text-xs leading-relaxed glass-panel text-slate-200 rounded-tl-none border-indigo-500/10 shadow-inner">
-                            <p className="whitespace-pre-wrap">{streamingContent}</p>
-                            <span className="inline-block h-3.5 w-1 bg-indigo-500 ml-1 animate-pulse" />
+                            <p className="whitespace-pre-wrap inline">
+                              {streamingContent}
+                              <span className="inline-block h-3 w-1 bg-indigo-500 ml-1.5 animate-pulse align-middle" />
+                            </p>
                           </div>
                         )}
                         
@@ -540,9 +542,11 @@ export default function ChatPage() {
 
           {/* RIGHT DRAWER: Citation source details */}
           {selectedCitation && (
-            <aside className="w-80 border-l border-slate-800/80 bg-slate-950 p-5 flex flex-col justify-between shrink-0 animate-fade-in relative z-20">
+            <aside className="w-85 border-l border-slate-800/80 bg-slate-950 p-5 flex flex-col justify-between shrink-0 animate-fade-in relative z-20">
+              {/* Internal Glowing Blob */}
+              <div className="absolute top-1/4 right-1/4 h-[180px] w-[180px] rounded-full bg-indigo-500/5 blur-[80px] pointer-events-none" />
               
-              <div className="space-y-5 flex-1 overflow-y-auto">
+              <div className="space-y-5 flex-1 overflow-y-auto relative z-10">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
                   <div className="flex items-center gap-1.5">
                     <Quote className="h-4.5 w-4.5 text-indigo-400" />
@@ -563,29 +567,30 @@ export default function ChatPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-[10px] font-mono">
-                    <div className="p-2 bg-slate-900 border border-slate-800/60 rounded-lg">
-                      <span className="text-slate-500 block">Page Number</span>
-                      <span className="text-indigo-400 font-bold text-xs">{selectedCitation.page_number}</span>
+                    <div className="p-2 bg-slate-900/60 border border-slate-800/60 rounded-xl">
+                      <span className="text-slate-500 block text-[9px]">Page Number</span>
+                      <span className="text-indigo-400 font-bold text-xs">p. {selectedCitation.page_number}</span>
                     </div>
-                    <div className="p-2 bg-slate-900 border border-slate-800/60 rounded-lg">
-                      <span className="text-slate-500 block">Segment Index</span>
+                    <div className="p-2 bg-slate-900/60 border border-slate-800/60 rounded-xl">
+                      <span className="text-slate-500 block text-[9px]">Segment ID</span>
                       <span className="text-indigo-400 font-bold text-xs">#{selectedCitation.chunk_index}</span>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Excerpt Content</h4>
-                    <div className="p-4 bg-indigo-950/10 border border-indigo-900/10 rounded-xl leading-relaxed italic text-slate-300">
-                      &ldquo;{selectedCitation.content}&rdquo;
+                  <div className="space-y-1.5">
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Excerpt Text</h4>
+                    <div className="p-4 bg-slate-900/40 border border-slate-800/80 rounded-xl leading-relaxed italic text-slate-350 shadow-inner relative">
+                      <div className="absolute top-2 left-2 text-slate-700 font-serif text-3xl leading-none">&ldquo;</div>
+                      <p className="pl-3 pr-2 py-1">{selectedCitation.content}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="border-t border-slate-800/80 pt-4 mt-4 flex justify-end">
+              <div className="border-t border-slate-800/80 pt-4 mt-4 flex justify-end relative z-10">
                 <button
                   onClick={() => setSelectedCitation(null)}
-                  className="w-full py-2 border border-slate-850 hover:border-slate-800 bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-slate-200 text-[10px] font-bold uppercase rounded-lg transition-all"
+                  className="w-full py-2.5 border border-slate-800 hover:border-slate-750 bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-slate-200 text-[10px] font-bold uppercase rounded-xl transition-all"
                 >
                   Close Citation
                 </button>

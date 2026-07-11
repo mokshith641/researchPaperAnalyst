@@ -58,6 +58,32 @@ class VectorService:
         limit: int = 5
     ) -> List[Tuple[DocumentChunk, Paper, float]]:
         """Perform pgvector similarity search on chunks owned by user."""
+        # 1. Fallback to Qdrant if using SQLite database
+        dialect_name = db.bind.dialect.name if db.bind else ""
+        is_postgres = "postgresql" in dialect_name
+        
+        if not is_postgres:
+            from app.services.qdrant_service import QdrantService
+            # Scoped by user_id payload filter
+            filter_dict = {"user_id": str(user_id)}
+            matches = QdrantService.search_similar("research_papers", query, limit, filter_dict)
+            
+            search_results = []
+            for match in matches:
+                chunk_id = uuid.UUID(match["id"])
+                # Query DB for this chunk and its associated paper
+                stmt = select(DocumentChunk, Paper).join(Paper).where(DocumentChunk.id == chunk_id)
+                if paper_ids:
+                    stmt = stmt.where(Paper.id.in_(paper_ids))
+                res = await db.execute(stmt)
+                row = res.first()
+                if row:
+                    chunk, paper = row
+                    score = match["score"]
+                    search_results.append((chunk, paper, score))
+            return search_results
+
+        # 2. Original pgvector search
         query_embedding = await cls.get_embedding(query)
         
         # Calculate cosine distance (pgvector operator)

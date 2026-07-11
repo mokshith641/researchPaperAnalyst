@@ -95,6 +95,13 @@ export default function DashboardPage() {
     router.push("/chat");
   };
 
+  const startChatWithPaper = (paperId: string) => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("rpa_selected_paper_id", paperId);
+    }
+    router.push("/chat");
+  };
+
   if (authLoading || !isAuthenticated) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-slate-950">
@@ -220,13 +227,19 @@ export default function DashboardPage() {
                       className="p-3.5 bg-slate-900/40 border border-slate-800/80 hover:border-slate-800 rounded-xl space-y-2 text-xs"
                     >
                       <div className="flex justify-between items-center text-[10px] font-semibold text-slate-400">
-                        <span className="text-indigo-400 font-bold truncate max-w-[200px]" title={result.paper_title}>
+                        <span className="text-indigo-400 font-bold truncate max-w-[200px] sm:max-w-[300px]" title={result.paper_title}>
                           {result.paper_title}
                         </span>
                         <div className="flex items-center gap-2 font-mono">
                           <span>Page {result.page_number}</span>
                           <span className="h-1.5 w-1.5 rounded-full bg-slate-700" />
                           <span className="text-emerald-400">Match: {(result.score * 100).toFixed(0)}%</span>
+                          <button
+                            onClick={() => startChatWithPaper(result.paper_id)}
+                            className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded bg-indigo-500/10 hover:bg-indigo-500 text-indigo-400 hover:text-white border border-indigo-500/20 font-sans font-bold transition-all text-[9px] active:scale-95"
+                          >
+                            <MessageSquare className="h-3 w-3" /> Chat
+                          </button>
                         </div>
                       </div>
                       <p className="text-slate-300 leading-relaxed italic">&ldquo;{result.content}&rdquo;</p>
