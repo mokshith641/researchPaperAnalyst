@@ -117,6 +117,17 @@ app.include_router(upload.router, prefix=settings.API_V1_STR)
 app.include_router(rag.router, prefix=settings.API_V1_STR)
 
 
+@app.get("/", tags=["Root"])
+async def root():
+    """Welcome endpoint pointing to docs."""
+    return {
+        "message": f"Welcome to {settings.PROJECT_NAME} API",
+        "docs": "/docs",
+        "health": "/health",
+        "version": "1.0.0"
+    }
+
+
 @app.get("/health", status_code=status.HTTP_200_OK, tags=["Health"])
 async def health_check():
     """Simple API status checker."""

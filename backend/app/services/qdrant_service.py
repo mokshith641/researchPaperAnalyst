@@ -31,14 +31,14 @@ class QdrantService:
 
     @classmethod
     def get_client(cls) -> QdrantClient:
-        """Get or initialize the Qdrant Cloud client."""
+        """Get or initialize the Qdrant Cloud or local client."""
         if cls._client is not None:
             return cls._client
 
         if not settings.QDRANT_URL or not settings.QDRANT_API_KEY:
-            raise ValueError(
-                "QDRANT_URL and QDRANT_API_KEY must be configured in environment settings to run Qdrant Cloud vector search."
-            )
+            logger.warning("QDRANT_URL and QDRANT_API_KEY not configured. Falling back to local persistent Qdrant storage (./qdrant_db).")
+            cls._client = QdrantClient(path="./qdrant_db")
+            return cls._client
 
         logger.info(f"Connecting to Qdrant Cloud at {settings.QDRANT_URL}")
         cls._client = QdrantClient(

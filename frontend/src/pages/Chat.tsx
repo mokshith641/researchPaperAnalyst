@@ -186,7 +186,7 @@ export default function ChatPage() {
     const accessToken = localStorage.getItem("rpa_access_token");
     
     try {
-      const response = await fetch(`${API_BASE_URL}/chat/conversations/${activeChatId}/messages`, {
+      const response = await fetch(`${API_BASE_URL}/api/chat/conversations/${activeChatId}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

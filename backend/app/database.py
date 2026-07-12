@@ -10,9 +10,9 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Automatic fallback to local SQLite database if no database URL is set or if it points to the expired Supabase project
+# Automatic fallback to local SQLite database if no database URL is set
 is_fallback = False
-if not DATABASE_URL or "ehzneimxharlahkmvbii" in DATABASE_URL:
+if not DATABASE_URL:
     logger.warning("Using local SQLite database (rpa.db) fallback for local development.")
     DATABASE_URL = "sqlite+aiosqlite:///./rpa.db"
     is_fallback = True
@@ -24,10 +24,17 @@ elif DATABASE_URL.startswith("postgresql://"):
 
 # Configure engine connection arguments based on driver
 connect_args = {}
-if "supabase.com" in DATABASE_URL:
+if "supabase.com" in DATABASE_URL or "supabase.co" in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.split("?")[0]
+    
+    # Create an SSL context that disables certificate verification to prevent self-signed cert chain issues
+    import ssl
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    
     connect_args = {
-        "ssl": "require",
+        "ssl": ssl_context,
         "prepared_statement_cache_size": 0,
         "statement_cache_size": 0
     }
@@ -40,7 +47,9 @@ elif "postgresql" in DATABASE_URL:
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
-    connect_args=connect_args
+    connect_args=connect_args,
+    pool_pre_ping=True,
+    pool_recycle=300
 )
 SessionLocal = async_sessionmaker(
     autocommit=False,

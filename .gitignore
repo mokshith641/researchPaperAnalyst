@@ -1,4 +1,24 @@
+# Environments & Secrets
 env
 .env
-node_modules
+.env.*
+venv/
+backend/venv/
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Python Cache
+__pycache__/
 *.pyc
+
+# Database & Storage Files
+backend/rpa.db
+backend/qdrant_db/
+backend/uploads/
+
+# Build artifacts
+frontend/dist/
+frontend/build/
+frontend/*.tsbuildinfo

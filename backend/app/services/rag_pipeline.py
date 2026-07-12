@@ -29,17 +29,57 @@ class RAGPipeline:
         """
         conversation_repo = ConversationRepository(db)
         
-        # 1. Fetch relevant chunks from pgvector
+        # 1. Fetch past messages to construct conversation history (limit to last 6 messages)
+        past_messages = await conversation_repo.get_messages_by_conversation(conversation_id)
+        chat_history = []
+        for msg in past_messages[-6:]:
+            if msg.role == "user":
+                chat_history.append(HumanMessage(content=msg.content))
+            else:
+                chat_history.append(AIMessage(content=msg.content))
+
+        # 2. Condense follow-up query if chat history exists
+        search_query = question
+        if chat_history:
+            try:
+                history_turns = []
+                for msg in past_messages[-6:]:
+                    role_label = "User" if msg.role == "user" else "Assistant"
+                    history_turns.append(f"{role_label}: {msg.content}")
+                history_str = "\n".join(history_turns)
+                
+                condense_prompt = (
+                    "Given the following conversation history and a follow-up question, rephrase the follow-up question "
+                    "to be a standalone question that can be searched in a vector database. "
+                    "Do NOT answer the question, just return the rephrased standalone question in English. "
+                    "If the follow-up question is already standalone and does not refer to history, return it as-is.\n\n"
+                    "Chat History:\n"
+                    f"{history_str}\n\n"
+                    f"Follow-up Question: {question}\n"
+                    "Standalone Question:"
+                )
+                condense_llm = get_llm_model(streaming=False)
+                import asyncio
+                res = await asyncio.to_thread(condense_llm.invoke, [HumanMessage(content=condense_prompt)])
+                standalone_query = res.content.strip()
+                if standalone_query.startswith('"') and standalone_query.endswith('"'):
+                    standalone_query = standalone_query[1:-1]
+                search_query = standalone_query
+                logger.info(f"RAG: Condensed query from '{question}' to '{search_query}'")
+            except Exception as ce:
+                logger.warning(f"RAG: Failed to condense query: {ce}")
+
+        # 3. Fetch relevant chunks from pgvector/Qdrant using search_query
         logger.info(f"RAG: Retrieving relevant context for question in chat {conversation_id}")
         search_results = await VectorService.similarity_search(
             db=db,
-            query=question,
+            query=search_query,
             user_id=user_id,
             paper_ids=paper_ids,
             limit=5
         )
         
-        # 2. Extract citations list & format context
+        # 4. Extract citations list & format context
         citations = []
         context_blocks = []
         for idx, (chunk, paper, score) in enumerate(search_results):
@@ -60,16 +100,7 @@ class RAGPipeline:
         # Send citations event to client first
         yield f"event: citations\ndata: {json.dumps(citations)}\n\n"
         
-        # 3. Fetch past messages to construct conversation history (limit to last 6 messages)
-        past_messages = await conversation_repo.get_messages_by_conversation(conversation_id)
-        chat_history = []
-        for msg in past_messages[-6:]:
-            if msg.role == "user":
-                chat_history.append(HumanMessage(content=msg.content))
-            else:
-                chat_history.append(AIMessage(content=msg.content))
-                
-        # 4. Formulate the LLM inputs
+        # 5. Formulate the LLM inputs
         context_str = "\n\n---\n\n".join(context_blocks) if context_blocks else "No relevant context found in documents."
         
         system_instructions = (
@@ -108,7 +139,7 @@ class RAGPipeline:
                     yield f"event: token\ndata: {json.dumps(token)}\n\n"
         except Exception as e:
             logger.error(f"RAG: LLM streaming error: {str(e)}")
-            error_msg = "\n\n[Error occurred during response generation]"
+            error_msg = f"\n\n[Error occurred during response generation: {str(e)}]"
             yield f"event: token\ndata: {json.dumps(error_msg)}\n\n"
             assistant_content.append(error_msg)
             

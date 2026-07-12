@@ -14,6 +14,11 @@ def get_llm_model(streaming: bool = False):
         return _llm_model
 
     if settings.LLM_PROVIDER == "openai":
+        if not settings.OPENAI_API_KEY or settings.OPENAI_API_KEY.strip() == "":
+            raise ValueError(
+                "OPENAI_API_KEY is not configured in your .env file. "
+                "Please add your OpenAI API key to use the OpenAI LLM."
+            )
         from langchain_openai import ChatOpenAI
         model = ChatOpenAI(
             openai_api_key=settings.OPENAI_API_KEY,
@@ -22,6 +27,11 @@ def get_llm_model(streaming: bool = False):
             streaming=streaming
         )
     else:
+        if not settings.GROQ_API_KEY or settings.GROQ_API_KEY.strip() == "":
+            raise ValueError(
+                "GROQ_API_KEY is not configured in your .env file. "
+                "Please add your Groq API key to use the Groq LLM."
+            )
         from langchain_groq import ChatGroq
         model = ChatGroq(
             groq_api_key=settings.GROQ_API_KEY,
