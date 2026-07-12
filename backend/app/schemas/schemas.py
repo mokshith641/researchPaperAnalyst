@@ -121,3 +121,5 @@ class SummaryResponse(BaseModel):
     abstract: Optional[str] = None
     key_points: List[str] = []
     explain_simple: Optional[str] = None
+    keywords: List[str] = []
+    explain_keywords: Optional[str] = None

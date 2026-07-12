@@ -7,7 +7,7 @@ import { Conversation, Message, Paper, Citation } from "../types";
 import Navbar from "../components/Navbar";
 import { 
   MessageSquare, Plus, Trash2, Send, Sparkles, BookOpen, 
-  ChevronRight, AlertCircle, FileText, Bookmark, Quote, Info 
+  ChevronRight, AlertCircle, FileText, Bookmark, Quote, Info, Pencil
 } from "lucide-react";
 import { API_BASE_URL } from "../services/api";
 
@@ -27,6 +27,10 @@ export default function ChatPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingCitations, setStreamingCitations] = useState<Citation[]>([]);
+
+  // Rename state
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editingChatTitle, setEditingChatTitle] = useState("");
 
   // UI State
   const [loadingChats, setLoadingChats] = useState(true);
@@ -148,6 +152,23 @@ export default function ChatPage() {
       }
     } catch (err) {
       alert("Failed to delete conversation");
+    }
+  };
+
+  const handleRenameChat = async (chatId: string, newTitle: string) => {
+    if (!newTitle.trim()) {
+      setEditingChatId(null);
+      return;
+    }
+    try {
+      const updated = await chatService.renameConversation(chatId, newTitle.trim());
+      setConversations((prev) =>
+        prev.map((c) => (c.id === chatId ? { ...c, title: updated.title } : c))
+      );
+    } catch (err) {
+      alert("Failed to rename conversation");
+    } finally {
+      setEditingChatId(null);
     }
   };
 
@@ -288,23 +309,60 @@ export default function ChatPage() {
                   return (
                     <div
                       key={chat.id}
-                      onClick={() => handleSelectChat(chat.id)}
+                      onClick={() => {
+                        if (editingChatId !== chat.id) {
+                          handleSelectChat(chat.id);
+                        }
+                      }}
                       className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer border transition-all text-xs ${
                         isActive
                            ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-400 font-semibold"
                           : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
                       }`}
                     >
-                      <div className="flex items-center gap-2.5 truncate max-w-[85%]">
+                      <div className="flex items-center gap-2.5 truncate max-w-[75%] flex-1">
                         <MessageSquare className="h-4 w-4 shrink-0 text-slate-500" />
-                        <span className="truncate leading-none">{chat.title}</span>
+                        {editingChatId === chat.id ? (
+                          <input
+                            type="text"
+                            value={editingChatTitle}
+                            onChange={(e) => setEditingChatTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleRenameChat(chat.id, editingChatTitle);
+                              if (e.key === "Escape") setEditingChatId(null);
+                            }}
+                            onBlur={() => handleRenameChat(chat.id, editingChatTitle)}
+                            autoFocus
+                            className="bg-slate-800 text-white text-[11px] px-1.5 py-0.5 rounded border border-indigo-500 focus:outline-none w-full"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <span className="truncate leading-none">{chat.title}</span>
+                        )}
                       </div>
-                      <button
-                        onClick={(e) => handleDeleteChat(chat.id, e)}
-                        className="text-slate-600 hover:text-red-400 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-slate-800/50 transition-all shrink-0"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      
+                      {editingChatId !== chat.id && (
+                        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingChatId(chat.id);
+                              setEditingChatTitle(chat.title);
+                            }}
+                            className="text-slate-500 hover:text-indigo-400 p-0.5 rounded hover:bg-slate-800 transition-colors"
+                            title="Rename Chat"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteChat(chat.id, e)}
+                            className="text-slate-500 hover:text-red-400 p-0.5 rounded hover:bg-slate-800 transition-colors"
+                            title="Delete Chat"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })

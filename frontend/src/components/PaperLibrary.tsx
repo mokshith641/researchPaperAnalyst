@@ -6,7 +6,7 @@ import { Paper } from "../types";
 import { papersService } from "../services/papers";
 import { 
   FileText, Download, Trash2, MessageSquare, Sparkles, 
-  Search, RefreshCw, AlertCircle, FileDigit, HelpCircle, FileCheck, X
+  Search, RefreshCw, AlertCircle, FileDigit, HelpCircle, FileCheck, X, Pencil
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -26,6 +26,25 @@ export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibr
   const [summaryData, setSummaryData] = useState<any | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  // Paper rename state
+  const [editingPaperId, setEditingPaperId] = useState<string | null>(null);
+  const [editingPaperTitle, setEditingPaperTitle] = useState("");
+
+  const handleRenamePaper = async (paperId: string, newTitle: string) => {
+    if (!newTitle.trim()) {
+      setEditingPaperId(null);
+      return;
+    }
+    try {
+      await papersService.renamePaper(paperId, newTitle.trim());
+      onRefresh();
+    } catch (err) {
+      alert("Failed to rename paper");
+    } finally {
+      setEditingPaperId(null);
+    }
+  };
 
   // Filter papers
   const filteredPapers = papers.filter((paper) =>
@@ -155,10 +174,40 @@ export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibr
                   <td className="p-4">
                     <div className="flex items-center gap-3 max-w-[280px] sm:max-w-[400px]">
                       <FileText className="h-5 w-5 text-indigo-400 shrink-0" />
-                      <div className="truncate">
-                        <p className="font-semibold text-slate-200 truncate" title={paper.title}>
-                          {paper.title}
-                        </p>
+                      <div className="truncate flex-1">
+                        {editingPaperId === paper.id ? (
+                          <input
+                            type="text"
+                            value={editingPaperTitle}
+                            onChange={(e) => setEditingPaperTitle(e.target.value)}
+                            onKeyDown={async (e) => {
+                              if (e.key === "Enter") {
+                                await handleRenamePaper(paper.id, editingPaperTitle);
+                              }
+                              if (e.key === "Escape") {
+                                setEditingPaperId(null);
+                              }
+                            }}
+                            onBlur={async () => {
+                              await handleRenamePaper(paper.id, editingPaperTitle);
+                            }}
+                            autoFocus
+                            className="bg-slate-900 text-white text-xs px-2 py-0.5 rounded border border-indigo-500 focus:outline-none w-full max-w-[300px]"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <div 
+                            className="font-semibold text-slate-200 truncate cursor-pointer hover:text-indigo-400 flex items-center gap-1.5 group/title"
+                            onClick={() => {
+                              setEditingPaperId(paper.id);
+                              setEditingPaperTitle(paper.title);
+                            }}
+                            title="Click to rename paper"
+                          >
+                            <span className="truncate">{paper.title}</span>
+                            <Pencil className="h-3 w-3 text-slate-500 opacity-0 group-hover/title:opacity-100 transition-opacity shrink-0" />
+                          </div>
+                        )}
                         <p className="text-[10px] text-slate-500 truncate" title={paper.file_name}>
                           {paper.file_name}
                         </p>
@@ -275,6 +324,33 @@ export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibr
                       {summaryData.summary}
                     </p>
                   </div>
+
+                  {/* Keyword Explanation Section */}
+                  {summaryData.explain_keywords && (
+                    <div className="space-y-1.5">
+                      <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Keyword-Focused Explanation</h4>
+                      <p className="p-3.5 bg-indigo-950/10 border border-indigo-900/20 rounded-xl leading-relaxed">
+                        {summaryData.explain_keywords}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Major Keywords Section */}
+                  {summaryData.keywords && summaryData.keywords.length > 0 && (
+                    <div className="space-y-1.5">
+                      <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Major Keywords</h4>
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {summaryData.keywords.map((kw: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="px-2.5 py-1 text-[10px] font-semibold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded-lg select-none transition-all duration-200"
+                          >
+                            #{kw}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
  
                   {/* ELI5 / Explanation Section */}
                   <div className="space-y-1.5">

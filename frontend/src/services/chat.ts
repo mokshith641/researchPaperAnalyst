@@ -19,6 +19,11 @@ export const chatService = {
     return response.data;
   },
 
+  renameConversation: async (conversationId: string, title: string): Promise<Conversation> => {
+    const response = await api.put(`/chat/conversations/${conversationId}`, { title });
+    return response.data;
+  },
+
   deleteConversation: async (conversationId: string): Promise<void> => {
     await api.delete(`/chat/conversations/${conversationId}`);
   },

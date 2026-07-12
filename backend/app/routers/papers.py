@@ -219,34 +219,50 @@ async def summarize_paper(
     if paper.status != "completed":
         raise HTTPException(status_code=400, detail="Paper processing is not completed yet.")
         
-    # Compile explain simple fallback if needed
+    # Compile dynamic fields using LLM
     explain_simple = None
+    keywords = []
+    explain_keywords = None
     if paper.summary:
-        # We can construct or fetch it
-        # Since we stored it in the DB during background processing:
-        # Wait, did we store explain_simple? In our models.py, summary, abstract, key_points are columns.
-        # We can check if explain_simple is inside key_points or separate.
-        # Let's generate it dynamically if not stored, or return abstract/summary.
-        # To make it super robust, if we want an explain-like-I'm-5 explanation, we can generate it on-the-fly from the summary.
-        # This is extremely useful if the user requests it!
-        # Let's call the LLM to generate explain_simple from the paper's pre-computed summary.
         from app.services.llm_service import get_llm_model
         from langchain_core.messages import SystemMessage, HumanMessage
+        import json
+        import asyncio
+        import re
         try:
             llm = get_llm_model()
+            system_prompt = (
+                "You are an expert research analyzer. Your task is to analyze the research paper summary provided "
+                "and generate three items in a JSON object:\n"
+                "1. 'explain_simple': An explanation in extremely simple, jargon-free language (suitable for a 10-year-old) under 3 sentences.\n"
+                "2. 'keywords': A JSON list of 5-8 major keywords or key phrases representing the core concepts of the paper.\n"
+                "3. 'explain_keywords': A keyword-focused explanation (2-3 sentences) that specifically connects and highlights the major keywords to describe what the paper does.\n\n"
+                "Format the response ONLY as a raw JSON string. Do not include markdown code fences (like ```json), no leading or trailing text, just the raw JSON object."
+            )
             messages = [
-                SystemMessage(content="Explain the following summary of a research paper in extremely simple language, suitable for a 10-year-old. Keep it under 3 sentences."),
-                HumanMessage(content=f"Summary: {paper.summary}")
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=f"Paper Summary: {paper.summary}")
             ]
-            import asyncio
             response = await asyncio.to_thread(llm.invoke, messages)
-            explain_simple = response.content.strip()
-        except Exception:
-            explain_simple = "Explain-like-I'm-5 explanation generation failed."
+            cleaned_content = response.content.strip()
+            if cleaned_content.startswith("```"):
+                cleaned_content = re.sub(r"^```(?:json)?\n", "", cleaned_content)
+                cleaned_content = re.sub(r"\n```$", "", cleaned_content)
+            
+            data = json.loads(cleaned_content)
+            explain_simple = data.get("explain_simple")
+            keywords = data.get("keywords", [])
+            explain_keywords = data.get("explain_keywords")
+        except Exception as e:
+            explain_simple = f"Simple explanation generation failed: {str(e)}"
+            keywords = ["Research", "Study", "Analysis"]
+            explain_keywords = "Keyword-based explanation generation failed."
             
     return SummaryResponse(
         summary=paper.summary or "No summary generated.",
         abstract=paper.abstract or "No abstract available.",
         key_points=paper.key_points or [],
-        explain_simple=explain_simple
+        explain_simple=explain_simple,
+        keywords=keywords,
+        explain_keywords=explain_keywords
     )

@@ -79,6 +79,30 @@ async def delete_conversation(
     return {"detail": "Conversation deleted successfully"}
 
 
+class ConversationUpdate(BaseModel):
+    title: str
+
+
+@router.put("/conversations/{conversation_id}", response_model=ConversationResponse)
+async def update_conversation(
+    conversation_id: uuid.UUID,
+    conversation_update: ConversationUpdate,
+    current_user: UserResponse = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Rename an existing conversation thread."""
+    conversation_repo = ConversationRepository(db)
+    conversation = await conversation_repo.update_title(
+        conversation_id, conversation_update.title, current_user.id
+    )
+    if not conversation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found or unauthorized."
+        )
+    return conversation
+
+
 @router.post("/conversations/{conversation_id}/messages")
 async def send_message(
     conversation_id: uuid.UUID,
