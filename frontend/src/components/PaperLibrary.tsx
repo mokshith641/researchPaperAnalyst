@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { Paper } from "../types";
 import { papersService } from "../services/papers";
 import { 
@@ -218,7 +219,7 @@ export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibr
       </div>
 
       {/* Summarizer Sidebar/Dialog */}
-      {selectedPaperSummary && (
+      {selectedPaperSummary && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/70 backdrop-blur-sm p-4 animate-fade-in">
           <div className="w-full max-w-2xl h-full rounded-2xl glass-panel shadow-2xl p-6 flex flex-col justify-between overflow-hidden relative">
             {/* Background glowing effects for premium style */}
@@ -314,8 +315,10 @@ export default function PaperLibrary({ papers, isLoading, onRefresh }: PaperLibr
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+        document.body
+      )
+    }
     </div>
   );
 }
