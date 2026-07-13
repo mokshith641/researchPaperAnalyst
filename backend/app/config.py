@@ -25,10 +25,10 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE_MB: int = int(os.getenv("MAX_FILE_SIZE_MB", 25))
 
     # ---------------- AI Stack ----------------
-    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "huggingface")
+    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "fastembed")
     HF_EMBEDDING_MODEL: str = os.getenv(
         "HF_EMBEDDING_MODEL",
-        "sentence-transformers/all-MiniLM-L6-v2"
+        "BAAI/bge-small-en-v1.5"
     )
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
 

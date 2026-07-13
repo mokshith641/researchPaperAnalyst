@@ -6,11 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.models.models import DocumentChunk, Paper
 
+from fastembed import TextEmbedding
+
 # Cache the embedding model to avoid reloading on every request
 _embeddings_model = None
+_fastembed_local_model = None
 
 def get_embeddings_model():
-    """Load the embeddings model based on environment configuration."""
+    """Load the OpenAI embeddings model based on environment configuration."""
     global _embeddings_model
     if _embeddings_model is not None:
         return _embeddings_model
@@ -22,31 +25,41 @@ def get_embeddings_model():
             openai_api_key=settings.OPENAI_API_KEY,
             model="text-embedding-3-small"
         )
-    else:
-        from langchain_community.embeddings import HuggingFaceEmbeddings
-        _embeddings_model = HuggingFaceEmbeddings(
-            model_name=settings.HF_EMBEDDING_MODEL,
-            encode_kwargs={'normalize_embeddings': True}
-        )
     return _embeddings_model
+
+def get_fastembed_local_model():
+    """Load the local FastEmbed BAAI/bge-small-en-v1.5 model."""
+    global _fastembed_local_model
+    if _fastembed_local_model is None:
+        # BAAI/bge-small-en-v1.5 is lightweight, highly efficient, and runs on ONNX Runtime
+        _fastembed_local_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+    return _fastembed_local_model
 
 
 class VectorService:
     @staticmethod
     async def get_embedding(text: str) -> List[float]:
         """Generate vector embedding for a single text string."""
-        model = get_embeddings_model()
-        # Embed single text (run in thread pool to prevent blocking)
-        embeddings = await asyncio.to_thread(model.embed_query, text)
-        return embeddings
+        if settings.EMBEDDING_PROVIDER == "openai":
+            model = get_embeddings_model()
+            embeddings = await asyncio.to_thread(model.embed_query, text)
+            return embeddings
+        else:
+            model = get_fastembed_local_model()
+            embeddings = await asyncio.to_thread(lambda: list(model.embed([text])))
+            return [float(x) for x in embeddings[0]]
 
     @staticmethod
     async def get_embeddings(texts: List[str]) -> List[List[float]]:
         """Generate vector embeddings for a list of text strings."""
-        model = get_embeddings_model()
-        # Embed multiple documents (run in thread pool to prevent blocking)
-        embeddings = await asyncio.to_thread(model.embed_documents, texts)
-        return embeddings
+        if settings.EMBEDDING_PROVIDER == "openai":
+            model = get_embeddings_model()
+            embeddings = await asyncio.to_thread(model.embed_documents, texts)
+            return embeddings
+        else:
+            model = get_fastembed_local_model()
+            embeddings = await asyncio.to_thread(lambda: list(model.embed(texts)))
+            return [list(map(float, emb)) for emb in embeddings]
 
     @classmethod
     async def similarity_search(
