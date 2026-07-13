@@ -60,7 +60,8 @@ class PaperRepository:
 
     async def update_status(
         self, paper_id: uuid.UUID, status: str, error_message: Optional[str] = None, num_pages: Optional[int] = None,
-        summary: Optional[str] = None, abstract: Optional[str] = None, key_points: Optional[List[str]] = None
+        summary: Optional[str] = None, abstract: Optional[str] = None, key_points: Optional[List[str]] = None,
+        authors: Optional[str] = None
     ) -> Optional[Paper]:
         """Update processing status and extracted details for a paper."""
         paper = await self.get_by_id(paper_id)
@@ -78,6 +79,8 @@ class PaperRepository:
             paper.abstract = abstract
         if key_points:
             paper.key_points = key_points
+        if authors:
+            paper.authors = authors
             
         self.db.add(paper)
         await self.db.commit()

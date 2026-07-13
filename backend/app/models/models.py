@@ -41,6 +41,7 @@ class Paper(Base):
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     abstract: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     key_points: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    authors: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

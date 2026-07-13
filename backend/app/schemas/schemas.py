@@ -45,6 +45,7 @@ class PaperResponse(BaseModel):
     summary: Optional[str] = None
     abstract: Optional[str] = None
     key_points: Optional[List[str]] = None
+    authors: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

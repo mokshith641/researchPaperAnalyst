@@ -113,7 +113,8 @@ async def process_pdf_background(
             num_pages=num_pages,
             summary=summary_data.get("summary"),
             abstract=summary_data.get("abstract"),
-            key_points=summary_data.get("key_points")
+            key_points=summary_data.get("key_points"),
+            authors=summary_data.get("authors")
         )
         
         # Update job status

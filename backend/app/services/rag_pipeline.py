@@ -2,8 +2,10 @@ import json
 import logging
 from typing import AsyncGenerator, List, Optional
 from uuid import UUID
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.models import Paper, DocumentChunk
 from app.repositories.paper_repository import PaperRepository
 from app.repositories.conversation_repository import ConversationRepository
 from app.services.vector_service import VectorService
@@ -79,9 +81,59 @@ class RAGPipeline:
             limit=5
         )
         
+        # 3b. Fetch paper records matching paper_ids (or matched via similarity search)
+        papers = []
+        if paper_ids:
+            # Query db for specified papers
+            stmt_papers = select(Paper).where(Paper.id.in_(paper_ids))
+            res_papers = await db.execute(stmt_papers)
+            papers = list(res_papers.scalars().all())
+        else:
+            # If no paper_ids are selected, we can fetch the papers that appeared in the search results
+            matched_paper_ids = list(set([chunk.paper_id for chunk, paper, score in search_results]))
+            if matched_paper_ids:
+                stmt_papers = select(Paper).where(Paper.id.in_(matched_paper_ids))
+                res_papers = await db.execute(stmt_papers)
+                papers = list(res_papers.scalars().all())
+                
+        # Prepare papers metadata context string
+        papers_meta_list = []
+        for p in papers:
+            authors_str = getattr(p, "authors", None) or "Unknown"
+            papers_meta_list.append(
+                f"Paper Title: {p.title}\n"
+                f"File Name: {p.file_name}\n"
+                f"Authors: {authors_str}\n"
+                f"Abstract: {p.abstract or 'Not available.'}\n"
+                f"Summary: {p.summary or 'Not available.'}"
+            )
+        papers_metadata_context = "\n\n---\n\n".join(papers_meta_list) if papers_meta_list else "No papers metadata available."
+        
+        # Also query the first page chunks for these papers to provide raw text header details (contains authors, titles)
+        first_page_chunks = []
+        if papers:
+            paper_uuids = [p.id for p in papers]
+            stmt_page1 = (
+                select(DocumentChunk)
+                .where(DocumentChunk.paper_id.in_(paper_uuids))
+                .where(DocumentChunk.page_number == 1)
+                .order_by(DocumentChunk.chunk_index)
+            )
+            res_page1 = await db.execute(stmt_page1)
+            first_page_chunks = list(res_page1.scalars().all())
+        
         # 4. Extract citations list & format context
         citations = []
         context_blocks = []
+        
+        # Prepend first page chunks as context to guarantee access to header metadata
+        for chunk in first_page_chunks:
+            paper = next((p for p in papers if p.id == chunk.paper_id), None)
+            paper_title = paper.title if paper else "Unknown"
+            context_blocks.append(
+                f"Excerpt (Page 1 Header) | Source: {paper_title} (Page 1):\n{chunk.content}"
+            )
+            
         for idx, (chunk, paper, score) in enumerate(search_results):
             # Only include chunks with a reasonable similarity score (e.g. > 0.3)
             # cosine similarity score ranges from 0.0 to 1.0
@@ -104,9 +156,11 @@ class RAGPipeline:
         context_str = "\n\n---\n\n".join(context_blocks) if context_blocks else "No relevant context found in documents."
         
         system_instructions = (
-            "You are a professional Research Paper Assistant. Answer the user's question based strictly and ONLY on the provided retrieved excerpts.\n"
-            "If the answer cannot be derived from the excerpts, reply: 'I'm sorry, but I cannot find that information in the uploaded research papers.' Do NOT make up facts or use outside knowledge.\n"
-            "Citations format: In your explanation, explicitly cite which research paper and page number you are referring to when stating facts (e.g., 'According to [Paper Name] (Page X)...').\n\n"
+            "You are a professional Research Paper Assistant. Answer the user's question based strictly and ONLY on the provided retrieved excerpts and uploaded papers metadata.\n"
+            "If the answer cannot be derived from the excerpts or papers metadata, reply: 'I'm sorry, but I cannot find that information in the uploaded research papers.' Do NOT make up facts or use outside knowledge.\n"
+            "Citations format: In your explanation, explicitly cite which research paper and page number you are referring to when stating facts (e.g., 'According to [Paper Name] (Page X)...' or if referring to general paper metadata, 'According to the metadata of [Paper Name]...').\n\n"
+            "Uploaded Papers Metadata:\n"
+            f"{papers_metadata_context}\n\n"
             "Retrieved Excerpts:\n"
             f"{context_str}"
         )

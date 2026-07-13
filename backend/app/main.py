@@ -18,6 +18,81 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def fill_missing_authors(SessionLocal):
+    """Background task to populate missing author information for existing papers."""
+    import asyncio
+    # Wait a few seconds to let uvicorn finish starting up
+    await asyncio.sleep(5)
+    logger.info("Starting background task to populate missing authors for completed papers...")
+    try:
+        from sqlalchemy import select
+        from app.models.models import Paper, DocumentChunk
+        from app.services.llm_service import get_llm_model
+        from langchain_core.messages import SystemMessage, HumanMessage
+
+        async with SessionLocal() as db:
+            stmt = select(Paper).where(Paper.status == "completed").where((Paper.authors == None) | (Paper.authors == ""))
+            res = await db.execute(stmt)
+            papers = res.scalars().all()
+            
+            if not papers:
+                logger.info("No papers found with missing authors metadata.")
+                return
+                
+            logger.info(f"Found {len(papers)} completed papers with missing authors. Fetching page 1 content...")
+            llm = get_llm_model()
+            
+            for paper in papers:
+                try:
+                    # Retrieve the first page chunk of the paper to extract authors
+                    stmt_chunk = (
+                        select(DocumentChunk)
+                        .where(DocumentChunk.paper_id == paper.id)
+                        .where(DocumentChunk.page_number == 1)
+                        .order_by(DocumentChunk.chunk_index)
+                        .limit(1)
+                    )
+                    res_chunk = await db.execute(stmt_chunk)
+                    first_chunk = res_chunk.scalars().first()
+                    if not first_chunk:
+                        # Fallback to any chunk
+                        stmt_chunk_fb = (
+                            select(DocumentChunk)
+                            .where(DocumentChunk.paper_id == paper.id)
+                            .order_by(DocumentChunk.chunk_index)
+                            .limit(1)
+                        )
+                        res_chunk_fb = await db.execute(stmt_chunk_fb)
+                        first_chunk = res_chunk_fb.scalars().first()
+                        
+                    if not first_chunk:
+                        logger.warning(f"No text chunks found for paper {paper.id} ({paper.title}). Skipping.")
+                        continue
+                        
+                    logger.info(f"Extracting authors for paper: {paper.title}...")
+                    prompt = (
+                        "Analyze the following text from the first page of a research paper and extract the author names. "
+                        "Return ONLY a comma-separated list of author names (e.g. 'John Doe, Jane Smith'). "
+                        "If no authors are found, return 'Unknown'. Do not include any other text.\n\n"
+                        f"Text:\n{first_chunk.content}"
+                    )
+                    messages = [
+                        SystemMessage(content="You are a helpful research assistant that extracts metadata."),
+                        HumanMessage(content=prompt)
+                    ]
+                    response = await asyncio.to_thread(llm.invoke, messages)
+                    authors = response.content.strip()
+                    if authors:
+                        paper.authors = authors
+                        db.add(paper)
+                        await db.commit()
+                        logger.info(f"Successfully populated authors for '{paper.title}': {authors}")
+                except Exception as paper_ex:
+                    logger.error(f"Failed to populate authors for paper {paper.id} ({paper.title}): {paper_ex}")
+    except Exception as ex:
+        logger.error(f"Failed to complete populate missing authors background task: {ex}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup actions
@@ -29,8 +104,26 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             if "postgresql" in str(engine.url):
                 await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+            
+            # Run migrations/alter table to add authors column if it does not exist
+            try:
+                if "postgresql" in str(engine.url):
+                    await conn.execute(text("ALTER TABLE papers ADD COLUMN IF NOT EXISTS authors TEXT;"))
+                else:
+                    # SQLite: check if authors column exists first
+                    res = await conn.execute(text("PRAGMA table_info(papers);"))
+                    cols = [row[1] for row in res.fetchall()]
+                    if "authors" not in cols:
+                        await conn.execute(text("ALTER TABLE papers ADD COLUMN authors TEXT;"))
+            except Exception as migrate_ex:
+                logger.warning(f"Database migration (adding authors column) failed/already done: {migrate_ex}")
+                
             await conn.run_sync(Base.metadata.create_all)
         logger.info("Database initialization completed successfully.")
+        
+        # Trigger background task to populate missing authors for completed papers
+        import asyncio
+        asyncio.create_task(fill_missing_authors(SessionLocal))
         
         # Sync SQLite chunks to Qdrant if out of sync
         async with SessionLocal() as db:

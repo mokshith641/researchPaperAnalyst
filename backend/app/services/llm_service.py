@@ -48,7 +48,7 @@ def get_llm_model(streaming: bool = False):
 class LLMService:
     @classmethod
     async def summarize_text(cls, text_content: str) -> Dict[str, Any]:
-        """Summarize text content (Abstract, Key Points, Simple explanation) in JSON format."""
+        """Summarize text content (Abstract, Key Points, Simple explanation, Authors) in JSON format."""
         llm = get_llm_model()
         
         system_prompt = (
@@ -59,7 +59,8 @@ class LLMService:
             "2. 'abstract': A brief 1-2 sentence description of the research goal/problem.\n"
             "3. 'key_points': A JSON list of 4-6 strings, each representing a crucial takeaway, metric, or finding.\n"
             "4. 'explain_simple': A simple, jargon-free 2-sentence explanation of the paper's core concept, "
-            "written as if explaining to a 10-year-old child.\n\n"
+            "written as if explaining to a 10-year-old child.\n"
+            "5. 'authors': A string containing a comma-separated list of the authors of the paper (e.g. 'John Doe, Jane Smith' or 'Unknown' if not found).\n\n"
             "Format the response ONLY as a raw JSON string. Do not include markdown code fences (like ```json), "
             "no leading or trailing text, just the raw JSON object."
         )
@@ -84,13 +85,13 @@ class LLMService:
             summary_data = json.loads(cleaned_content)
             
             # Validate structure
-            required_keys = ["summary", "abstract", "key_points", "explain_simple"]
+            required_keys = ["summary", "abstract", "key_points", "explain_simple", "authors"]
             for key in required_keys:
                 if key not in summary_data:
                     if key == "key_points":
                         summary_data[key] = []
                     else:
-                        summary_data[key] = "Not available."
+                        summary_data[key] = "Unknown" if key == "authors" else "Not available."
             return summary_data
             
         except Exception as e:
@@ -99,5 +100,6 @@ class LLMService:
                 "summary": "Failed to generate AI summary. The document was indexed successfully.",
                 "abstract": "Failed to generate abstract.",
                 "key_points": [f"Error occurred during summary generation: {str(e)}"],
-                "explain_simple": "Failed to generate simple explanation."
+                "explain_simple": "Failed to generate simple explanation.",
+                "authors": "Unknown"
             }
