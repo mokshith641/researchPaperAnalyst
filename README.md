@@ -174,3 +174,4 @@ cd backend
 - **Database**: Deploy a managed PostgreSQL instance using **Supabase** or **Neon**, and enable the `pgvector` extension.
 - **Backend API**: Deploy the `/backend` folder to **Render**, **Railway**, or **Fly.io** using the provided `Dockerfile`. Set the appropriate environment variables.
 - **Frontend App**: Deploy the `/frontend` folder to **Vercel** or **Netlify**. Set the `NEXT_PUBLIC_API_URL` variable pointing to your deployed Backend API.
+
